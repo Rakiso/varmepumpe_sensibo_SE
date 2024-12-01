@@ -1,0 +1,47 @@
+<!-- templates/login.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - Varmepumpe Kontroll</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="login-container">
+        <h2>Varmepumpe Login</h2>
+        <form method="POST" action="/login">
+            <div class="form-group">
+                <input type="password" name="password" placeholder="Password" required class="input">
+            </div>
+            {% if error %}
+                <p class="error">Feil passord</p>
+            {% endif %}
+            <div id="debug-info" style="display:none;">
+                <p>Form submitted: <span id="submitted">false</span></p>
+                <p>Response: <span id="response">none</span></p>
+            </div>
+            <button type="submit" class="button">Logg inn</button>
+        </form>
+    </div>
+
+    <script>
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const password = document.querySelector('input[name="password"]').value;
+            
+            fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `password=${encodeURIComponent(password)}`
+            })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    </script>
+</body>
+</html>

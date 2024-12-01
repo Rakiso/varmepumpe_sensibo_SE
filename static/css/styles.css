@@ -1,0 +1,178 @@
+/* styles.css */
+:root {
+    --primary: #4CAF50;
+    --primary-dark: #45a049;
+    --danger: #f44336;
+    --danger-dark: #d32f2f;
+    --background: #f5f5f5;
+    --text: #333;
+    --error: #f44336;
+    --success: #4CAF50;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: var(--background);
+    color: var(--text);
+}
+
+h1 {
+    color: var(--text);
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 2rem;
+}
+
+.container {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.button {
+    background-color: var(--primary);
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.2s, transform 0.1s;
+    width: 100%;
+    margin: 8px 0;
+}
+
+.button:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+.button.success {
+    background-color: var(--success);
+}
+
+.button.danger {
+    background-color: var(--danger);
+}
+
+.button.danger:hover {
+    background-color: var(--danger-dark);
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+    margin: 10px 0;
+    transition: border-color 0.2s;
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.status-text {
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 6px;
+    background-color: rgba(0,0,0,0.05);
+}
+
+.helper-text {
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: 8px;
+}
+
+.button-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.logo-container {
+    text-align: center;
+    margin: 20px 0;
+    margin-bottom: 20px;
+}
+
+.logo {
+    max-width: 200px;
+    height: auto;
+}
+
+.login-container {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 30px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.login-container input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+}
+
+.login-button {
+    margin-top: 20px;
+    width: 100%;
+    padding: 12px;
+    background-color: var(--primary);
+    transition: background-color 0.3s;
+}
+
+.login-button:hover {
+    background-color: var(--primary-dark);
+}
+
+.error {
+    color: #f44336;
+    margin: 10px 0;
+}
+
+@media (max-width: 600px) {
+    body {
+        padding: 10px;
+    }
+    
+    h1 {
+        font-size: 1.5rem;
+    }
+    
+    .container {
+        grid-template-columns: 1fr;
+    }
+}

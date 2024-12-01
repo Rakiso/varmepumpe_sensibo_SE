@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Varmepumpe Kontrollpanel</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="logo-container">
+        <img src="{{ url_for('static', filename='img/writehouseRGB.png') }}" alt="Varmepumpe Logo" class="logo">
+    </div>
+    <h1>Varmepumpe Kontrollpanel</h1>
+    
+    <div class="container">
+        <div id="pris-container" class="card">
+            <h3>Strømpris</h3>
+            <button onclick="hentStrompris()" class="button">
+                <span class="button-text">Oppdater Strømpris</span>
+            </button>
+            <p id="strompris" class="status-text"></p>
+        </div>
+        
+        <div id="kontroll-container" class="card">
+            <h3>Varmepumpe Kontroll</h3>
+            <div class="ac-controls">
+                <div class="button-group">
+                    <button onclick="slåPåVarmepumpe()" class="button success">
+                        <span class="button-text">Slå PÅ</span>
+                    </button>
+                    <button onclick="slåAvVarmepumpe()" class="button danger">
+                        <span class="button-text">Slå AV</span>
+                    </button>
+                </div>
+                <div class="temperature-control">
+                    <label for="temperature">Temperatur</label>
+                    <div class="temperature-buttons">
+                        <button onclick="adjustTemperature(-1)" class="button">-</button>
+                        <span id="current-temperature">22°C</span>
+                        <button onclick="adjustTemperature(1)" class="button">+</button>
+                    </div>
+                </div>
+                <div class="mode-control">
+                    <label for="ac-mode">Modus</label>
+                    <select id="ac-mode" onchange="setMode(this.value)" class="input">
+                        <option value="heat">Varme</option>
+                        <option value="cool">Kjøling</option>
+                        <option value="fan">Vifte</option>
+                        <option value="auto">Auto</option>
+                    </select>
+                </div>
+            </div>
+            <p id="status" class="status-text"></p>
+        </div>
+
+        <div id="terskel-container" class="card">
+            <h3>Prisnivåer</h3>
+            <div class="input-group">
+                <label for="pris-start">Pris Start (øre/kWh)</label>
+                <input type="number" 
+                       id="pris-start" 
+                       placeholder="Pris for å starte"
+                       class="input">
+                <label for="pris-stopp">Pris Stopp (øre/kWh)</label>
+                <input type="number" 
+                       id="pris-stopp" 
+                       placeholder="Pris for å stoppe"
+                       class="input">
+                <button onclick="settPriser()" class="button">
+                    <span class="button-text">Oppdater</span>
+                </button>
+            </div>
+            <p id="terskel-status" class="status-text"></p>
+            <small class="helper-text">Varmepumpen starter når prisen er under Start og stopper når prisen er over Stopp</small>
+        </div>
+    </div>
+
+    <script>
+        // Remove API_BASE constant and use relative path
+        let currentTemperature = 22;
+
+        async function hentStrompris() {
+            try {
+                document.getElementById('strompris').innerText = 'Henter strømpris...';
+                const response = await fetch('/api/strompris', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Nettverksfeil');
+                }
+                
+                const data = await response.json();
+                if (data.pris !== undefined) {
+                    document.getElementById('strompris').innerText = 
+                        `Nåværende strømpris: ${data.pris.toFixed(2)} øre/kWh`;
+                } else {
+                    throw new Error('Ingen prisdata mottatt');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('strompris').innerText = 
+                    `Feil: ${error.message}`;
+            }
+        }
+
+        async function slåAvVarmepumpe() {
+            try {
+                document.getElementById('status').innerText = 'Slår av varmepumpen...';
+                const response = await fetch('/api/slå_av_varmepumpe', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Nettverksfeil');
+                }
+                
+                const data = await response.json();
+                document.getElementById('status').innerText = data.status;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('status').innerText = `Feil: ${error.message}`;
+            }
+        }
+
+        async function slåPåVarmepumpe() {
+            document.getElementById('status').innerText = 'Slår på varmepumpen...';
+            
+            fetch('/api/slå_på_varmepumpe', {
+                method: 'POST'
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error('Nettverksfeil');
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('status').innerText = 
+                        data.status || 'Varmepumpe slått på';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('status').innerText = 
+                        `Feil: ${error.message}`;
+                });
+        }
+
+        async function adjustTemperature(delta) {
+            const newTemp = currentTemperature + delta;
+            
+            // Validate temperature range
+            if (newTemp < 16 || newTemp > 30) {
+                document.getElementById('status').innerText = 'Temperatur må være mellom 16°C og 30°C';
+                return;
+            }
+
+            try {
+                document.getElementById('status').innerText = 'Justerer temperatur...';
+                
+                const response = await fetch('/api/set_temperature', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ temperature: newTemp })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Nettverksfeil');
+                }
+
+                const data = await response.json();
+                currentTemperature = newTemp;
+                document.getElementById('current-temperature').innerText = `${currentTemperature}°C`;
+                document.getElementById('status').innerText = data.status;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('status').innerText = `Feil: ${error.message}`;
+            }
+        }
+
+        function settPriser() {
+            const prisStart = parseFloat(document.getElementById('pris-start').value);
+            const prisStopp = parseFloat(document.getElementById('pris-stopp').value);
+            
+            if (isNaN(prisStart) || isNaN(prisStopp)) {
+                document.getElementById('terskel-status').innerText = 
+                    'Vennligst oppgi gyldige verdier';
+                return;
+            }
+
+            if (prisStart >= prisStopp) {
+                document.getElementById('terskel-status').innerText = 
+                    'Startpris må være lavere enn stoppris';
+                return;
+            }
+
+            document.getElementById('terskel-status').innerText = 'Oppdaterer priser...';
+
+            fetch('/api/set_terskel', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    pris_start: prisStart,
+                    pris_stopp: prisStopp 
+                })
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error('Nettverksfeil');
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('terskel-status').innerText = 
+                        `Priser oppdatert - Start: ${prisStart} øre/kWh, Stopp: ${prisStopp} øre/kWh`;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('terskel-status').innerText = 
+                        `Feil: ${error.message}`;
+                });
+        }
+
+        // Auto-update price every 5 minutes
+        setInterval(hentStrompris, 300000);
+        // Initial price fetch
+        hentStrompris();
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            hentStrompris();  // Initial price fetch
+        });
+
+        // Initial price fetch
+        document.addEventListener('DOMContentLoaded', hentStrompris);
+    </script>
+</body>
+</html>
