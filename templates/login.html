@@ -1,47 +1,115 @@
-<!-- templates/login.html -->
 <!DOCTYPE html>
-<html>
-<head>
-    <title>Login - Varmepumpe Kontroll</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-</head>
-<body>
-    <div class="login-container">
-        <h2>Varmepumpe Login</h2>
-        <form method="POST" action="/login">
-            <div class="form-group">
-                <input type="password" name="password" placeholder="Password" required class="input">
-            </div>
-            {% if error %}
-                <p class="error">Feil passord</p>
-            {% endif %}
-            <div id="debug-info" style="display:none;">
-                <p>Form submitted: <span id="submitted">false</span></p>
-                <p>Response: <span id="response">none</span></p>
-            </div>
-            <button type="submit" class="button">Logg inn</button>
-        </form>
-    </div>
+<html lang="no">
 
-    <script>
-        document.querySelector('form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const password = document.querySelector('input[name="password"]').value;
-            
-            fetch('/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `password=${encodeURIComponent(password)}`
-            })
-            .then(response => {
-                if (response.redirected) {
-                    window.location.href = response.url;
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        });
-    </script>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Varmepumpe Login</title>
+    <!-- Google Fonts for modern typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Link to your updated stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: var(--background);
+        }
+        .login-container {
+            text-align: center;
+            background: var(--surface);
+            padding: 2rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            -webkit-appearance: none; /* Safari */
+            -moz-appearance: none; /* Firefox */
+            appearance: none; /* Standard */
+        }
+        .button {
+            color: #fff;
+            text-align: center;
+            display: inline-block;
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            -webkit-appearance: none; /* Safari */
+            -moz-appearance: none; /* Firefox */
+            appearance: none; /* Standard */
+            transition: var(--transition);
+        }
+        .button.primary {
+            background-color: var(--primary);
+        }
+        .button.primary:hover {
+            background-color: var(--primary-hover);
+        }
+        .error-message {
+            color: var(--danger);
+            margin-top: 10px;
+            background-color: rgba(220, 38, 38, 0.1);
+            padding: 10px;
+            border-radius: var(--radius);
+        }
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='img/writehouseRGB.png') }}" alt="WriteHouse Logo" class="logo">
+        </div>
+    </header>
+
+    <main role="main">
+        <section class="login-container">
+            <h2>Varmepumpe med Sensibo Sky</h2>
+
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="input-group">
+                    <input type="password" id="password" name="password" placeholder="Passord" required aria-label="Passord">
+                </div>
+
+                {% if error %}
+                <div class="error-message" role="alert">
+                    Feil passord
+                </div>
+                {% endif %}
+
+                <button type="submit" class="button primary" aria-label="Logg inn">
+                    <span class="button-text">Logg inn</span>
+                </button>
+                <p style="margin-top: 1rem;">
+                    <a href="https://www.elprisetjustnu.se">
+                        <img src="https://ik.imagekit.io/ajdfkwyt/hva-koster-strommen/elpriser-tillhandahalls-av-elprisetjustnu_ttNExOIU_.png" alt="Elpriser tillhandahålls av Elpriset just nu.se" width="200" height="45">
+                    </a>
+                </p>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 WriteHouse. Alle rettigheter reservert.</p>
+    </footer>
 </body>
+
 </html>

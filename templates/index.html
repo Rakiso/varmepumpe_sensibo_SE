@@ -4,246 +4,206 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Varmepumpe Kontrollpanel</title>
+    <!-- Google Fonts for modern typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Link to your updated stylesheet -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
-    <div class="logo-container">
-        <img src="{{ url_for('static', filename='img/writehouseRGB.png') }}" alt="Varmepumpe Logo" class="logo">
-    </div>
-    <h1>Varmepumpe Kontrollpanel</h1>
+    <!-- Header -->
     
-    <div class="container">
-        <div id="pris-container" class="card">
-            <h3>Strømpris</h3>
-            <button onclick="hentStrompris()" class="button">
-                <span class="button-text">Oppdater Strømpris</span>
-            </button>
-            <p id="strompris" class="status-text"></p>
-        </div>
-        
-        <div id="kontroll-container" class="card">
-            <h3>Varmepumpe Kontroll</h3>
-            <div class="ac-controls">
-                <div class="button-group">
-                    <button onclick="slåPåVarmepumpe()" class="button success">
-                        <span class="button-text">Slå PÅ</span>
-                    </button>
-                    <button onclick="slåAvVarmepumpe()" class="button danger">
-                        <span class="button-text">Slå AV</span>
-                    </button>
-                </div>
-                <div class="temperature-control">
-                    <label for="temperature">Temperatur</label>
-                    <div class="temperature-buttons">
-                        <button onclick="adjustTemperature(-1)" class="button">-</button>
-                        <span id="current-temperature">22°C</span>
-                        <button onclick="adjustTemperature(1)" class="button">+</button>
+
+    <!-- Main Content -->
+    <main>
+        <div class="container">
+            <!-- Electricity Price Card -->
+            <section id="price-container" class="card">
+                <h2>Strømpris SE03</h2>
+                <p id="price-display" class="price-display">-- øre/kWh</p>
+                <p id="last-updated" class="last-updated">Sist oppdatert: --:--</p>
+                <button onclick="fetchElectricityPrice()" class="button primary" aria-label="Oppdater strømpris">
+                    <span class="button-text">Oppdater Pris</span>
+                </button>
+                <p style="margin-top: 1rem;">
+                    <a href="https://www.elprisetjustnu.se">
+                        <img src="https://ik.imagekit.io/ajdfkwyt/hva-koster-strommen/elpriser-tillhandahalls-av-elprisetjustnu_ttNExOIU_.png" alt="Elpriser tillhandahålls av Elpriset just nu.se" width="200" height="45">
+                    </a>
+                </p>
+            </section>
+
+            <!-- Heat Pump Control Card -->
+            <section id="control-container" class="card">
+                <h2>Varmepumpe</h2>
+                <div class="control-panel">
+                    <!-- Power Controls -->
+                    <div class="button-group">
+                        <button onclick="turnOnHeatPump()" class="button success" id="on-button" aria-label="Slå på varmepumpe">
+                            <span class="button-text">PÅ</span>
+                        </button>
+                        <button onclick="turnOffHeatPump()" class="button danger" id="off-button" aria-label="Slå av varmepumpe">
+                            <span class="button-text">AV</span>
+                        </button>
+                    </div>
+
+                    <!-- Threshold Controls -->
+                    <div class="threshold-controls">
+                        <h3>Slår seg PÅ lik/under og AV over</h3>
+                        <div class="threshold-display">
+                            <div class="threshold-item">
+                                <span id="current-price-threshold" class="price">--</span>
+                                <span class="unit">øre/kWh</span>
+                            </div>
+                        </div>
+
+                        <div class="threshold-inputs">
+                            <div class="input-group">
+                                <input type="number" id="price-threshold" min="-100" step="0.1" required>
+                            </div>
+                            <button onclick="setThreshold()" class="button primary" aria-label="Oppdater grense">
+                                <span class="button-text">Oppdater Grense</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div class="mode-control">
-                    <label for="ac-mode">Modus</label>
-                    <select id="ac-mode" onchange="setMode(this.value)" class="input">
-                        <option value="heat">Varme</option>
-                        <option value="cool">Kjøling</option>
-                        <option value="fan">Vifte</option>
-                        <option value="auto">Auto</option>
-                    </select>
-                </div>
-            </div>
-            <p id="status" class="status-text"></p>
+                <p id="status" class="status-text" role="alert"></p>
+            </section>
         </div>
+    </main>
 
-        <div id="terskel-container" class="card">
-            <h3>Prisnivåer</h3>
-            <div class="input-group">
-                <label for="pris-start">Pris Start (øre/kWh)</label>
-                <input type="number" 
-                       id="pris-start" 
-                       placeholder="Pris for å starte"
-                       class="input">
-                <label for="pris-stopp">Pris Stopp (øre/kWh)</label>
-                <input type="number" 
-                       id="pris-stopp" 
-                       placeholder="Pris for å stoppe"
-                       class="input">
-                <button onclick="settPriser()" class="button">
-                    <span class="button-text">Oppdater</span>
-                </button>
-            </div>
-            <p id="terskel-status" class="status-text"></p>
-            <small class="helper-text">Varmepumpen starter når prisen er under Start og stopper når prisen er over Stopp</small>
-        </div>
-    </div>
-
+    <!-- Footer -->
+   
+    <!-- Scripts -->
     <script>
-        // Remove API_BASE constant and use relative path
-        let currentTemperature = 22;
+        const REFRESH_INTERVAL = 300000; // 5 minutes
 
-        async function hentStrompris() {
+        async function fetchElectricityPrice() {
+            const priceDisplay = document.getElementById('price-display');
+            const lastUpdated = document.getElementById('last-updated');
+
             try {
-                document.getElementById('strompris').innerText = 'Henter strømpris...';
-                const response = await fetch('/api/strompris', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
+                priceDisplay.innerText = 'Henter pris...';
+                const response = await fetch('/api/strompris');
+
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Nettverksfeil');
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
+
                 const data = await response.json();
-                if (data.pris !== undefined) {
-                    document.getElementById('strompris').innerText = 
-                        `Nåværende strømpris: ${data.pris.toFixed(2)} øre/kWh`;
+
+                if (data.pris !== undefined) {  // Changed from price to pris
+                    priceDisplay.innerText = `${data.pris.toFixed(2)} øre/kWh`;
+                    const now = new Date();
+                    const hours = now.getHours().toString().padStart(2, '0');
+                    const minutes = now.getMinutes().toString().padStart(2, '0');
+                    lastUpdated.innerText = `Sist oppdatert: ${hours}:${minutes}`;
+                    checkPriceAgainstThreshold(data.pris);
                 } else {
-                    throw new Error('Ingen prisdata mottatt');
+                    throw new Error(data.error || 'Invalid price data received');
                 }
             } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('strompris').innerText = 
-                    `Feil: ${error.message}`;
+                console.error('Price fetch error:', error);
+                priceDisplay.innerHTML = `<span class="error-message">Feilet å hente pris: ${error.message}</span>`;
             }
         }
 
-        async function slåAvVarmepumpe() {
-            try {
-                document.getElementById('status').innerText = 'Slår av varmepumpen...';
-                const response = await fetch('/api/slå_av_varmepumpe', {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Nettverksfeil');
-                }
-                
-                const data = await response.json();
-                document.getElementById('status').innerText = data.status;
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('status').innerText = `Feil: ${error.message}`;
-            }
-        }
+        async function checkPriceAgainstThreshold(currentPrice) {
+            const priceThreshold = parseFloat(document.getElementById('current-price-threshold').innerText);
 
-        async function slåPåVarmepumpe() {
-            document.getElementById('status').innerText = 'Slår på varmepumpen...';
-            
-            fetch('/api/slå_på_varmepumpe', {
-                method: 'POST'
-            })
-                .then(response => {
-                    if (!response.ok) throw new Error('Nettverksfeil');
-                    return response.json();
-                })
-                .then(data => {
-                    document.getElementById('status').innerText = 
-                        data.status || 'Varmepumpe slått på';
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    document.getElementById('status').innerText = 
-                        `Feil: ${error.message}`;
-                });
-        }
-
-        async function adjustTemperature(delta) {
-            const newTemp = currentTemperature + delta;
-            
-            // Validate temperature range
-            if (newTemp < 16 || newTemp > 30) {
-                document.getElementById('status').innerText = 'Temperatur må være mellom 16°C og 30°C';
+            if (isNaN(priceThreshold)) {
+                console.error('Invalid threshold price');
                 return;
             }
+
+            if (currentPrice <= priceThreshold) {
+                await turnOnHeatPump();
+            } else {
+                await turnOffHeatPump();
+            }
+        }
+
+        async function turnOnHeatPump() {
+            await controlHeatPump('turn_on', 'on-button');
+        }
+
+        async function turnOffHeatPump() {
+            await controlHeatPump('turn_off', 'off-button');
+        }
+
+        async function controlHeatPump(action, buttonId) {
+            const button = document.getElementById(buttonId);
+            const status = document.getElementById('status');
 
             try {
-                document.getElementById('status').innerText = 'Justerer temperatur...';
-                
-                const response = await fetch('/api/set_temperature', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ temperature: newTemp })
-                });
+                button.disabled = true;
+                status.innerText = `${action === 'turn_on' ? 'Starter' : 'Stopper'} varmepumpe...`;
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Nettverksfeil');
+                const response = await fetch(`/api/${action}`, { method: 'POST' });
+                const data = await response.json();
+
+                if (data.status) {
+                    status.innerText = data.status;
+                } else {
+                    throw new Error(data.error || 'Operation failed');
                 }
+            } catch (error) {
+                console.error(`Heat pump control error:`, error);
+                status.innerText = `Kunne ikke ${action === 'turn_on' ? 'starte' : 'stoppe'} varmepumpe: ${error.message}`;
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        async function setThreshold() {
+            const status = document.getElementById('status');
+            const priceThreshold = parseFloat(document.getElementById('price-threshold').value);
+
+            if (isNaN(priceThreshold)) {
+                status.innerText = 'Vennligst skriv inn en gyldig pris';
+                return;
+            }
+
+            try {
+                status.innerText = 'Oppdaterer grense...';
+                const response = await fetch('/api/set_threshold', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ price_threshold: priceThreshold })
+                });
 
                 const data = await response.json();
-                currentTemperature = newTemp;
-                document.getElementById('current-temperature').innerText = `${currentTemperature}°C`;
-                document.getElementById('status').innerText = data.status;
+                if (data.status) {
+                    status.innerText = data.status;
+                    await fetchThreshold();
+                } else {
+                    throw new Error(data.error || 'Kunne ikke oppdatere grense');
+                }
             } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('status').innerText = `Feil: ${error.message}`;
+                console.error('Threshold update error:', error);
+                status.innerText = `Kunne ikke oppdatere grense: ${error.message}`;
             }
         }
 
-        function settPriser() {
-            const prisStart = parseFloat(document.getElementById('pris-start').value);
-            const prisStopp = parseFloat(document.getElementById('pris-stopp').value);
-            
-            if (isNaN(prisStart) || isNaN(prisStopp)) {
-                document.getElementById('terskel-status').innerText = 
-                    'Vennligst oppgi gyldige verdier';
-                return;
+        async function fetchThreshold() {
+            try {
+                const response = await fetch('/api/get_threshold');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                if (data.price_threshold !== undefined) {
+                    document.getElementById('current-price-threshold').innerText = parseFloat(data.price_threshold).toFixed(2);
+                }
+            } catch (error) {
+                console.error('Threshold fetch error:', error);
+                document.getElementById('current-price-threshold').innerText = '--';
             }
-
-            if (prisStart >= prisStopp) {
-                document.getElementById('terskel-status').innerText = 
-                    'Startpris må være lavere enn stoppris';
-                return;
-            }
-
-            document.getElementById('terskel-status').innerText = 'Oppdaterer priser...';
-
-            fetch('/api/set_terskel', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ 
-                    pris_start: prisStart,
-                    pris_stopp: prisStopp 
-                })
-            })
-                .then(response => {
-                    if (!response.ok) throw new Error('Nettverksfeil');
-                    return response.json();
-                })
-                .then(data => {
-                    document.getElementById('terskel-status').innerText = 
-                        `Priser oppdatert - Start: ${prisStart} øre/kWh, Stopp: ${prisStopp} øre/kWh`;
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    document.getElementById('terskel-status').innerText = 
-                        `Feil: ${error.message}`;
-                });
         }
 
-        // Auto-update price every 5 minutes
-        setInterval(hentStrompris, 300000);
-        // Initial price fetch
-        hentStrompris();
-
-        // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
-            hentStrompris();  // Initial price fetch
+            fetchElectricityPrice();
+            fetchThreshold();
+            setInterval(fetchElectricityPrice, REFRESH_INTERVAL);
         });
-
-        // Initial price fetch
-        document.addEventListener('DOMContentLoaded', hentStrompris);
     </script>
 </body>
 </html>
